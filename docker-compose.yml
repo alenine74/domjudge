@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb
+    container_name: dj-mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    command: --max-connections=${MYSQL_MAX_CONNECTIONS} --innodb-log-file-size=${MYSQL_INNODB_LOG_FILE_SIZE} --max_allowed_packet=${MYSQL_MAX_ALLOWED_PACKET}
+    restart: always
+
+  domserver:
+    image: domjudge/domserver:latest
+    container_name: domserver
+    environment:
+      MYSQL_HOST: mariadb
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      CONTAINER_TIMEZONE: ${CONTAINER_TIMEZONE}
+    user: root
+    ports:
+      - "80:80"
+    depends_on:
+      - mariadb
+    volumes:
+      - domserver_data:/opt/domjudge/domserver/etc
+      - domserver_images:/opt/domjudge/domserver/webapp/public/images
+        # - ./custom_supervisord.conf:/etc/supervisord.conf
+    restart: always
+
+  judgehost:
+    image: domjudge/judgehost:latest
+    container_name: judgehost-0
+    privileged: true
+    user: root
+    environment:
+      DAEMON_ID: 0
+        # DOMSERVER_BASEURL: ${BASE_URL}
+      JUDGEDAEMON_USERNAME: judgehost
+      JUDGEDAEMON_PASSWORD: ${JUDGEDAEMON_PASSWORD}
+      CONTAINER_TIMEZONE: ${CONTAINER_TIMEZONE}
+    links:
+      - domserver
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+    restart: always
+
+  judgehost_1:
+    image: domjudge/judgehost:latest
+    container_name: judgehost-1
+    privileged: true
+    user: root
+    environment:
+      DAEMON_ID: 1
+        # DOMSERVER_BASEURL: ${BASE_URL}
+      JUDGEDAEMON_USERNAME: judgehost
+      JUDGEDAEMON_PASSWORD: ${JUDGEDAEMON_PASSWORD}
+      CONTAINER_TIMEZONE: ${CONTAINER_TIMEZONE}
+    links:
+      - domserver
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+    restart: always
+  
+  judgehost_2:
+    image: domjudge/judgehost:latest
+    container_name: judgehost-2
+    privileged: true
+    user: root
+    environment:
+      DAEMON_ID: 2
+        # DOMSERVER_BASEURL: ${BASE_URL}
+      JUDGEDAEMON_USERNAME: judgehost
+      JUDGEDAEMON_PASSWORD: ${JUDGEDAEMON_PASSWORD}
+      CONTAINER_TIMEZONE: ${CONTAINER_TIMEZONE}
+    links:
+      - domserver
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+    restart: always
+
+volumes:
+  mariadb_data:
+  domserver_data:
+  domserver_images:
+
